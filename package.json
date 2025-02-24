@@ -1,4 +1,7 @@
 {
   "name": "bot_builder",
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.js"
+  }
 }
