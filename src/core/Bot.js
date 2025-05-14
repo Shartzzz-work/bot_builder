@@ -49,41 +49,25 @@ class Bot {
 		return this.api.request("getUpdates", { offset });
 	}
 
-	/**
-	 * Запускает периодический опрос Telegram API для получения обновлений.
-	 * @param {number} [interval=1000] - Интервал опроса в миллисекундах.
-	 */
-	async startPolling(interval = 1000) {
-		if (this.isPolling) {
-			console.log("Polling is already running");
-			return;
-		}
-
-		this.isPolling = true;
-		console.log("Starting polling...");
-
-		while (this.isPolling) {
-			try {
-				const response = await this.getUpdates(this.updateOffset);
-				if (!response.ok) {
-					throw new Error(`Telegram API error: ${response.description}`);
-				}
-				const updates = response.result; // Извлекаем массив обновлений
-				if (updates && updates.length > 0) {
-					for (const update of updates) {
-						if (this.updateHandler) {
-							this.updateHandler(update);
-						}
-						this.updateOffset = update.update_id + 1; // Обновляем offset
-					}
-				}
-				await new Promise((resolve) => setTimeout(resolve, interval));
-			} catch (error) {
-				console.error("Polling error:", error);
-				await new Promise((resolve) => setTimeout(resolve, interval));
-			}
-		}
-	}
+/**
+ * Запускает поллинг для получения обновлений от Telegram.
+ * @param {UpdateHandler} updateHandler - Обработчик обновлений.
+ */
+async startPolling(updateHandler) {
+  let offset = 0;
+  while (true) {
+    try {
+      const updates = await this.getUpdates(offset);
+      for (const update of updates) {
+        await updateHandler.handle(update);
+        offset = update.update_id + 1;
+      }
+    } catch (error) {
+      console.error('Ошибка при получении обновлений:', error);
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+}
 
 	/**
 	 * Останавливает периодический опрос.
